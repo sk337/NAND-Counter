@@ -332,11 +332,24 @@ struct ProjectScanResult<'a> {
 
 impl<'a> fmt::Display for ProjectScanResult<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let filtered_chip_map: HashMap<_, _> = self
+            .chip_map
+            .iter()
+            .filter(|(k, _)| !BUILTIN_CHIPS.contains(&k.as_str()))
+            .collect();
+        let longest_name = filtered_chip_map.keys().map(|s| s.len()).max().unwrap_or(0);
+        let most_NAND = filtered_chip_map
+            .values()
+            .map(|c| c.NAND_count)
+            .max()
+            .unwrap_or(0)
+            .to_string()
+            .len();
         writeln!(f, "Project: {}", self.project.name)?;
         writeln!(f, "Path: {}", self.project.path.display())?;
         writeln!(f, "Total NAND: {}", self.total_nand)?;
 
-        let chip_count = self.chip_map.len();
+        let chip_count = filtered_chip_map.len();
         let avg_nand = if chip_count > 0 {
             self.total_nand as f64 / chip_count as f64
         } else {
@@ -348,7 +361,7 @@ impl<'a> fmt::Display for ProjectScanResult<'a> {
 
         writeln!(f, "Chips:")?;
 
-        let mut chips: Vec<_> = self.chip_map.iter().collect();
+        let mut chips: Vec<_> = filtered_chip_map.iter().collect();
         chips.sort_by_key(|(_, c)| usize::MAX - c.NAND_count);
 
         for (name, chip) in chips {
@@ -367,8 +380,13 @@ impl<'a> fmt::Display for ProjectScanResult<'a> {
             };
             writeln!(
                 f,
-                "{}: {}, {:+.1}%, {:.1}%",
-                name, chip.NAND_count, above_avg, total_percent
+                "{}:{} {},{} {:+.1}%, {:.1}%",
+                name,
+                " ".repeat(longest_name - name.len()),
+                chip.NAND_count,
+                " ".repeat(most_NAND - chip.NAND_count.to_string().len()),
+                above_avg,
+                total_percent
             )?;
         }
 
