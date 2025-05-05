@@ -8,15 +8,30 @@ use std::{env, fs::read_dir};
 use semver::Version;
 use serde_json::{Value, from_str};
 
-const BUILTIN_CHIPS: [&str; 8] = [
+const BUILTIN_CHIPS: [&str; 18] = [
+    // Merge / Split
     "4-1BIT",
     "1-4BIT",
     "4-8BIT",
     "8-4BIT",
     "1-8BIT",
     "8-1BIT",
+    // Display
     "LED",
     "7-SEGMENT",
+    "RGB DISPLAY",
+    "DOT DISPLAY",
+    // Memory
+    "ROM 256x16",
+    // Basic
+    "CLOCK",
+    "PULSE",
+    "KEY",
+    "3-STATE BUFFER",
+    // Bus
+    "BUS-1",
+    "BUS-4",
+    "BUS-8",
 ];
 
 macro_rules! path {
@@ -327,6 +342,11 @@ impl<'a> fmt::Display for ProjectScanResult<'a> {
         } else {
             0.0
         };
+
+        writeln!(f, "Average NAND per chip: {:.1}", avg_nand)?;
+        writeln!(f, "{}", "-".repeat(40))?;
+
+        writeln!(f, "Chips:")?;
 
         let mut chips: Vec<_> = self.chip_map.iter().collect();
         chips.sort_by_key(|(_, c)| usize::MAX - c.NAND_count);
